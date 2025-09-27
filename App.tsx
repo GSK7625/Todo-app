@@ -1,14 +1,21 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Todo, Filter, Priority, SortOption } from './types';
 import TodoInput from './components/TodoInput';
 import TodoList from './components/TodoList';
 import TodoFilter from './components/TodoFilter';
+import AmbientSoundPlayer from './components/AmbientSoundPlayer';
 
 type ActiveTimer = {
   todoId: number;
-  timeLeft: number; // in seconds
+  remainingSeconds: number;
   isRunning: boolean;
+};
+
+type PersistedActiveTimer = {
+  todoId: number;
+  remainingSeconds: number;
+  isRunning: boolean;
+  timestamp: number;
 };
 
 const App: React.FC = () => {
@@ -25,6 +32,7 @@ const App: React.FC = () => {
   const [filter, setFilter] = useState<Filter>(Filter.ALL);
   const [sort, setSort] = useState<SortOption>(SortOption.CREATED_DESC);
   const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null);
+  const [deletingTodoId, setDeletingTodoId] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -34,22 +42,91 @@ const App: React.FC = () => {
     }
   }, [todos]);
 
+  // This effect runs once on mount to initialize the timer from localStorage.
   useEffect(() => {
-    if (!activeTimer || !activeTimer.isRunning) return;
+    try {
+        const storedTimer = localStorage.getItem('activeTimer');
+        if (!storedTimer) return;
 
-    if (activeTimer.timeLeft <= 0) {
-      const todo = todos.find(t => t.id === activeTimer.todoId);
-      alert(`Time's up for task: "${todo?.text}"! Time for a break.`);
-      setActiveTimer(null);
-      // Optionally mark task as complete
-      // if (todo) {
-      //   toggleTodo(todo.id);
-      // }
-      return;
+        const parsedTimer: PersistedActiveTimer = JSON.parse(storedTimer);
+        const todoForTimer = todos.find(t => t.id === parsedTimer.todoId);
+
+        // If the todo doesn't exist anymore, clean up.
+        if (!todoForTimer) {
+            localStorage.removeItem('activeTimer');
+            return;
+        }
+
+        // If it was paused, just load it.
+        if (!parsedTimer.isRunning) {
+            setActiveTimer({
+                todoId: parsedTimer.todoId,
+                remainingSeconds: parsedTimer.remainingSeconds,
+                isRunning: false,
+            });
+            return;
+        }
+
+        // If it was running, calculate progress.
+        const secondsPassed = Math.floor((Date.now() - parsedTimer.timestamp) / 1000);
+        const newRemainingSeconds = parsedTimer.remainingSeconds - secondsPassed;
+
+        if (newRemainingSeconds <= 0) {
+            // Timer finished while away. Update todo and clean up.
+            const totalDurationInSeconds = (todoForTimer.duration || 0) * 60;
+            setTodos(prev => prev.map(t => 
+              t.id === parsedTimer.todoId ? { ...t, timeSpent: totalDurationInSeconds } : t
+            ));
+            localStorage.removeItem('activeTimer');
+        } else {
+            // Timer is still running. Set the state.
+            setActiveTimer({
+                todoId: parsedTimer.todoId,
+                remainingSeconds: newRemainingSeconds,
+                isRunning: true,
+            });
+        }
+    } catch (error) {
+        console.error("Failed to initialize timer from localStorage", error);
+        localStorage.removeItem('activeTimer');
+    }
+  }, []); // Intentionally empty dependency array to run only once on mount
+
+  // Persist activeTimer state to localStorage whenever it changes.
+  useEffect(() => {
+    if (activeTimer) {
+      const dataToStore: PersistedActiveTimer = {
+        ...activeTimer,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem('activeTimer', JSON.stringify(dataToStore));
+    } else {
+      localStorage.removeItem('activeTimer');
+    }
+  }, [activeTimer]);
+
+
+  useEffect(() => {
+    if (!activeTimer || !activeTimer.isRunning) {
+        return;
+    }
+
+    if (activeTimer.remainingSeconds <= 0) {
+        const timedOutTodo = todos.find(t => t.id === activeTimer.todoId);
+        alert(`Time's up for task: "${timedOutTodo?.text}"!`);
+        handleStopTimer();
+        return;
     }
 
     const intervalId = setInterval(() => {
-        setActiveTimer(prev => (prev ? { ...prev, timeLeft: prev.timeLeft - 1 } : null));
+        setActiveTimer(currentTimer => {
+            if (!currentTimer || !currentTimer.isRunning) {
+                clearInterval(intervalId);
+                return currentTimer;
+            }
+            const newRemaining = Math.max(0, currentTimer.remainingSeconds - 1);
+            return { ...currentTimer, remainingSeconds: newRemaining };
+        });
     }, 1000);
 
     return () => clearInterval(intervalId);
@@ -65,28 +142,34 @@ const App: React.FC = () => {
       dueDate: data.dueDate,
       priority: data.priority,
       duration: data.duration,
+      timeSpent: 0,
     };
     setTodos([newTodo, ...todos]);
   };
 
   const toggleTodo = (id: number) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
-     // Stop timer if task is completed
-    if (activeTimer && activeTimer.todoId === id) {
-        setActiveTimer(null);
+    if (activeTimer?.todoId === id) {
+        handleStopTimer();
     }
+    setTodos(prevTodos =>
+        prevTodos.map(todo => 
+            todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        )
+    );
   };
 
   const deleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-    // Stop timer if task is deleted
+    if (deletingTodoId) return; // Prevent deleting while another is animating
+
+    setDeletingTodoId(id);
     if (activeTimer && activeTimer.todoId === id) {
-        setActiveTimer(null);
+      setActiveTimer(null);
     }
+    
+    setTimeout(() => {
+        setTodos(currentTodos => currentTodos.filter(todo => todo.id !== id));
+        setDeletingTodoId(null);
+    }, 300); // Corresponds to animation duration
   };
   
   const editTodo = (id: number, text: string) => {
@@ -99,12 +182,33 @@ const App: React.FC = () => {
     );
   };
 
-  const handleStartTimer = (todoId: number, duration: number) => {
-    setActiveTimer({
-        todoId,
-        timeLeft: duration * 60,
-        isRunning: true,
-    });
+  const handleStartTimer = (todoId: number) => {
+    // If another timer is actively RUNNING, prevent starting a new one.
+    // This is a safeguard, as the UI should already prevent this.
+    if (activeTimer && activeTimer.isRunning && activeTimer.todoId !== todoId) {
+      return;
+    }
+
+    // If there is a PAUSED timer for a different task, we need to stop it
+    // to save its progress before starting the new one.
+    if (activeTimer && !activeTimer.isRunning && activeTimer.todoId !== todoId) {
+      handleStopTimer(); // This saves progress and sets activeTimer to null.
+    }
+
+    const todoToStart = todos.find(t => t.id === todoId);
+    if (!todoToStart || !todoToStart.duration) return;
+
+    const totalDurationInSeconds = todoToStart.duration * 60;
+    const timeSpentSoFar = todoToStart.timeSpent || 0;
+    const remainingSeconds = totalDurationInSeconds - timeSpentSoFar;
+
+    if (remainingSeconds > 0) {
+        setActiveTimer({
+            todoId,
+            remainingSeconds,
+            isRunning: true,
+        });
+    }
   };
 
   const handlePauseTimer = () => {
@@ -112,9 +216,26 @@ const App: React.FC = () => {
   };
   
   const handleStopTimer = () => {
-      setActiveTimer(null);
-  };
+    if (!activeTimer) return;
 
+    const { todoId, remainingSeconds } = activeTimer;
+    const todo = todos.find(t => t.id === todoId);
+    if (!todo || !todo.duration) {
+        setActiveTimer(null);
+        return;
+    };
+
+    const totalDurationInSeconds = todo.duration * 60;
+    const newTimeSpent = totalDurationInSeconds - remainingSeconds;
+    
+    setTodos(prevTodos => prevTodos.map(t => 
+        t.id === todoId 
+        ? { ...t, timeSpent: Math.round(Math.max(0, Math.min(newTimeSpent, totalDurationInSeconds))) }
+        : t
+    ));
+
+    setActiveTimer(null);
+  };
 
   const sortedAndFilteredTodos = useMemo(() => {
     const filtered = todos.filter(todo => {
@@ -154,7 +275,7 @@ const App: React.FC = () => {
         <header className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Todo List</h1>
           <p className="mt-2 text-slate-500 dark:text-slate-400">
-            You have {activeCount} task{activeCount !== 1 ? 's' : ''} left to do.
+            You have <span key={activeCount} className="animate-count-up font-bold">{activeCount}</span> task{activeCount !== 1 ? 's' : ''} left to do.
           </p>
         </header>
 
@@ -165,10 +286,10 @@ const App: React.FC = () => {
               onToggle={toggleTodo} 
               onDelete={deleteTodo}
               onEdit={editTodo}
+              deletingTodoId={deletingTodoId}
               activeTimer={activeTimer}
               onStartTimer={handleStartTimer}
               onPauseTimer={handlePauseTimer}
-              onStopTimer={handleStopTimer}
             />
         </div>
         
@@ -179,6 +300,7 @@ const App: React.FC = () => {
             onSortChange={setSort}
         />
       </main>
+      <AmbientSoundPlayer />
     </div>
   );
 };

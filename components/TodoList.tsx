@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Todo } from '../types';
 import TodoItem from './TodoItem';
 
 interface ActiveTimer {
     todoId: number;
-    timeLeft: number;
+    remainingSeconds: number;
     isRunning: boolean;
 }
 interface TodoListProps {
@@ -13,10 +12,10 @@ interface TodoListProps {
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
   onEdit: (id: number, text: string) => void;
+  deletingTodoId: number | null;
   activeTimer: ActiveTimer | null;
-  onStartTimer: (id: number, duration: number) => void;
+  onStartTimer: (id: number) => void;
   onPauseTimer: () => void;
-  onStopTimer: () => void;
 }
 
 const TodoList: React.FC<TodoListProps> = ({ 
@@ -24,10 +23,10 @@ const TodoList: React.FC<TodoListProps> = ({
     onToggle, 
     onDelete, 
     onEdit, 
+    deletingTodoId,
     activeTimer,
     onStartTimer,
     onPauseTimer,
-    onStopTimer 
 }) => {
   if (todos.length === 0) {
     return (
@@ -46,10 +45,10 @@ const TodoList: React.FC<TodoListProps> = ({
           onToggle={onToggle}
           onDelete={onDelete}
           onEdit={onEdit}
+          isDeleting={deletingTodoId === todo.id}
           activeTimer={activeTimer}
           onStartTimer={onStartTimer}
           onPauseTimer={onPauseTimer}
-          onStopTimer={onStopTimer}
         />
       ))}
     </ul>

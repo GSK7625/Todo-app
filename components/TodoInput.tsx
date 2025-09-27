@@ -68,6 +68,7 @@ const TodoInput: React.FC<TodoInputProps> = ({ onAddTodo }) => {
           type="submit"
           className="bg-blue-600 text-white p-3 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-900 transition duration-200 flex items-center justify-center"
           aria-label="Add new todo"
+          title="Add new todo"
         >
           <PlusIcon className="h-6 w-6" />
         </button>

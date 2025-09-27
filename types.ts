@@ -6,6 +6,7 @@ export interface Todo {
   dueDate?: string | null;
   priority?: Priority;
   duration?: number | null; // in minutes
+  timeSpent?: number; // in seconds
 }
 
 export enum Filter {

@@ -5,6 +5,7 @@ export interface Todo {
   createdAt: number;
   dueDate?: string | null;
   priority?: Priority;
+  duration?: number | null; // in minutes
 }
 
 export enum Filter {
@@ -24,4 +25,6 @@ export enum SortOption {
   CREATED_ASC = 'created_asc',
   DUE_DATE = 'due_date',
   PRIORITY = 'priority',
+  DURATION_DESC = 'duration_desc',
+  DURATION_ASC = 'duration_asc',
 }

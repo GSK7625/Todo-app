@@ -1,8 +1,15 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Todo, Filter, Priority, SortOption } from './types';
 import TodoInput from './components/TodoInput';
 import TodoList from './components/TodoList';
 import TodoFilter from './components/TodoFilter';
+
+type ActiveTimer = {
+  todoId: number;
+  timeLeft: number; // in seconds
+  isRunning: boolean;
+};
 
 const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>(() => {
@@ -17,6 +24,7 @@ const App: React.FC = () => {
 
   const [filter, setFilter] = useState<Filter>(Filter.ALL);
   const [sort, setSort] = useState<SortOption>(SortOption.CREATED_DESC);
+  const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null);
 
   useEffect(() => {
     try {
@@ -26,7 +34,29 @@ const App: React.FC = () => {
     }
   }, [todos]);
 
-  const addTodo = (data: { text: string; dueDate: string | null; priority: Priority }) => {
+  useEffect(() => {
+    if (!activeTimer || !activeTimer.isRunning) return;
+
+    if (activeTimer.timeLeft <= 0) {
+      const todo = todos.find(t => t.id === activeTimer.todoId);
+      alert(`Time's up for task: "${todo?.text}"! Time for a break.`);
+      setActiveTimer(null);
+      // Optionally mark task as complete
+      // if (todo) {
+      //   toggleTodo(todo.id);
+      // }
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+        setActiveTimer(prev => (prev ? { ...prev, timeLeft: prev.timeLeft - 1 } : null));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [activeTimer, todos]);
+
+
+  const addTodo = (data: { text: string; dueDate: string | null; priority: Priority; duration: number | null }) => {
     const newTodo: Todo = {
       id: Date.now(),
       text: data.text,
@@ -34,6 +64,7 @@ const App: React.FC = () => {
       createdAt: Date.now(),
       dueDate: data.dueDate,
       priority: data.priority,
+      duration: data.duration,
     };
     setTodos([newTodo, ...todos]);
   };
@@ -44,10 +75,18 @@ const App: React.FC = () => {
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
       )
     );
+     // Stop timer if task is completed
+    if (activeTimer && activeTimer.todoId === id) {
+        setActiveTimer(null);
+    }
   };
 
   const deleteTodo = (id: number) => {
     setTodos(todos.filter((todo) => todo.id !== id));
+    // Stop timer if task is deleted
+    if (activeTimer && activeTimer.todoId === id) {
+        setActiveTimer(null);
+    }
   };
   
   const editTodo = (id: number, text: string) => {
@@ -59,6 +98,23 @@ const App: React.FC = () => {
       todos.map((todo) => (todo.id === id ? { ...todo, text } : todo))
     );
   };
+
+  const handleStartTimer = (todoId: number, duration: number) => {
+    setActiveTimer({
+        todoId,
+        timeLeft: duration * 60,
+        isRunning: true,
+    });
+  };
+
+  const handlePauseTimer = () => {
+    setActiveTimer(prev => (prev ? { ...prev, isRunning: !prev.isRunning } : null));
+  };
+  
+  const handleStopTimer = () => {
+      setActiveTimer(null);
+  };
+
 
   const sortedAndFilteredTodos = useMemo(() => {
     const filtered = todos.filter(todo => {
@@ -77,6 +133,10 @@ const App: React.FC = () => {
                 if (!a.dueDate) return 1;
                 if (!b.dueDate) return -1;
                 return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+            case SortOption.DURATION_DESC:
+                return (b.duration ?? -1) - (a.duration ?? -1);
+            case SortOption.DURATION_ASC:
+                return (a.duration ?? Infinity) - (b.duration ?? Infinity);
             case SortOption.CREATED_ASC:
                 return a.createdAt - b.createdAt;
             case SortOption.CREATED_DESC:
@@ -104,7 +164,11 @@ const App: React.FC = () => {
               todos={sortedAndFilteredTodos} 
               onToggle={toggleTodo} 
               onDelete={deleteTodo}
-              onEdit={editTodo} 
+              onEdit={editTodo}
+              activeTimer={activeTimer}
+              onStartTimer={handleStartTimer}
+              onPauseTimer={handlePauseTimer}
+              onStopTimer={handleStopTimer}
             />
         </div>
         

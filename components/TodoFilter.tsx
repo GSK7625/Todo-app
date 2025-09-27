@@ -44,6 +44,8 @@ const TodoFilter: React.FC<TodoFilterProps> = ({ currentFilter, onFilterChange, 
             <option value={SortOption.CREATED_ASC}>Oldest First</option>
             <option value={SortOption.DUE_DATE}>Due Date</option>
             <option value={SortOption.PRIORITY}>Priority</option>
+            <option value={SortOption.DURATION_DESC}>Duration (Longest)</option>
+            <option value={SortOption.DURATION_ASC}>Duration (Shortest)</option>
         </select>
       </div>
     </div>

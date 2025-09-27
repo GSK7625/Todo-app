@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Todo, Filter } from './types';
+import { Todo, Filter, Priority, SortOption } from './types';
 import TodoInput from './components/TodoInput';
 import TodoList from './components/TodoList';
 import TodoFilter from './components/TodoFilter';
@@ -17,6 +16,7 @@ const App: React.FC = () => {
   });
 
   const [filter, setFilter] = useState<Filter>(Filter.ALL);
+  const [sort, setSort] = useState<SortOption>(SortOption.CREATED_DESC);
 
   useEffect(() => {
     try {
@@ -26,11 +26,14 @@ const App: React.FC = () => {
     }
   }, [todos]);
 
-  const addTodo = (text: string) => {
+  const addTodo = (data: { text: string; dueDate: string | null; priority: Priority }) => {
     const newTodo: Todo = {
       id: Date.now(),
-      text,
+      text: data.text,
       completed: false,
+      createdAt: Date.now(),
+      dueDate: data.dueDate,
+      priority: data.priority,
     };
     setTodos([newTodo, ...todos]);
   };
@@ -57,16 +60,31 @@ const App: React.FC = () => {
     );
   };
 
-  const filteredTodos = useMemo(() => {
-    switch (filter) {
-      case Filter.ACTIVE:
-        return todos.filter((todo) => !todo.completed);
-      case Filter.COMPLETED:
-        return todos.filter((todo) => todo.completed);
-      default:
-        return todos;
-    }
-  }, [todos, filter]);
+  const sortedAndFilteredTodos = useMemo(() => {
+    const filtered = todos.filter(todo => {
+        if (filter === Filter.ACTIVE) return !todo.completed;
+        if (filter === Filter.COMPLETED) return todo.completed;
+        return true;
+    });
+
+    return filtered.sort((a, b) => {
+        switch (sort) {
+            case SortOption.PRIORITY:
+                const priorityOrder = { [Priority.HIGH]: 0, [Priority.MEDIUM]: 1, [Priority.LOW]: 2 };
+                return (priorityOrder[a.priority!] ?? 3) - (priorityOrder[b.priority!] ?? 3);
+            case SortOption.DUE_DATE:
+                if (!a.dueDate && !b.dueDate) return b.createdAt - a.createdAt;
+                if (!a.dueDate) return 1;
+                if (!b.dueDate) return -1;
+                return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+            case SortOption.CREATED_ASC:
+                return a.createdAt - b.createdAt;
+            case SortOption.CREATED_DESC:
+            default:
+                return b.createdAt - a.createdAt;
+        }
+    });
+  }, [todos, filter, sort]);
 
   const activeCount = useMemo(() => todos.filter(todo => !todo.completed).length, [todos]);
 
@@ -83,14 +101,19 @@ const App: React.FC = () => {
         <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl shadow-lg">
             <TodoInput onAddTodo={addTodo} />
             <TodoList 
-              todos={filteredTodos} 
+              todos={sortedAndFilteredTodos} 
               onToggle={toggleTodo} 
               onDelete={deleteTodo}
               onEdit={editTodo} 
             />
         </div>
         
-        <TodoFilter currentFilter={filter} onFilterChange={setFilter} />
+        <TodoFilter 
+            currentFilter={filter} 
+            onFilterChange={setFilter} 
+            currentSort={sort}
+            onSortChange={setSort}
+        />
       </main>
     </div>
   );

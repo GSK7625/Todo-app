@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Todo } from '../types';
+import { Todo, Priority } from '../types';
 import { PencilIcon, TrashIcon, CheckIcon } from './icons';
 
 interface TodoItemProps {
@@ -9,6 +8,20 @@ interface TodoItemProps {
   onDelete: (id: number) => void;
   onEdit: (id: number, text: string) => void;
 }
+
+const getPriorityClass = (priority?: Priority) => {
+  switch (priority) {
+    case Priority.HIGH:
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    case Priority.MEDIUM:
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case Priority.LOW:
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    default:
+      return 'bg-slate-100 text-slate-800 dark:bg-slate-600 dark:text-slate-200';
+  }
+};
+
 
 const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -40,7 +53,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
   return (
     <li
       className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${
-        todo.completed ? 'bg-slate-200 dark:bg-slate-800' : 'bg-white dark:bg-slate-700'
+        todo.completed ? 'bg-slate-200 dark:bg-slate-800 opacity-70' : 'bg-white dark:bg-slate-700'
       } shadow-sm`}
     >
       <button
@@ -76,7 +89,17 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
         </span>
       )}
 
-      <div className="flex items-center ml-4 space-x-2">
+      <div className="flex items-center ml-auto space-x-2 pl-4">
+         {todo.dueDate && !isEditing && (
+            <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">
+              {new Date(todo.dueDate).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+            </span>
+        )}
+        {todo.priority && !isEditing && (
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getPriorityClass(todo.priority)}`}>
+            {todo.priority}
+          </span>
+        )}
         <button
           onClick={handleEdit}
           className="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600"

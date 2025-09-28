@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Todo, Priority, Subtask } from '../types';
 import { PencilIcon, TrashIcon, CheckIcon, PlayIcon, PauseIcon, HourglassIcon } from './icons';
 
@@ -83,6 +83,18 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
     const totalDurationInSeconds = (subtask.duration || 0) * 60;
     const hasProgress = (subtask.timeSpent || 0) > 0;
     
+    const prevCompleted = useRef(subtask.completed);
+    const [isAnimatingComplete, setIsAnimatingComplete] = useState(false);
+
+    useEffect(() => {
+        if (subtask.completed && !prevCompleted.current) {
+            setIsAnimatingComplete(true);
+            const timer = setTimeout(() => setIsAnimatingComplete(false), 500); // Animation duration
+            return () => clearTimeout(timer);
+        }
+        prevCompleted.current = subtask.completed;
+    }, [subtask.completed]);
+
     const renderTimerControls = () => {
         if (!subtask.duration) return null;
 
@@ -90,7 +102,7 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
             return (
                  <button 
                     onClick={onPauseTimer} 
-                    className="p-1 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     aria-label={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
                     title={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
                 >
@@ -103,7 +115,7 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
             <button 
                 onClick={() => onStartTimer(todoId, subtask.id)} 
                 disabled={isAnotherTimerRunning}
-                className="p-1 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Start subtask timer"
                 title="Start subtask timer"
             >
@@ -150,7 +162,7 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
             aria-label={subtask.completed ? 'Mark subtask as incomplete' : 'Mark subtask as complete'}
             disabled={isParentCompleted}
         >
-            {subtask.completed && <CheckIcon className="h-3 w-3 text-white" />}
+            {subtask.completed && <CheckIcon className={`h-3 w-3 text-white ${isAnimatingComplete ? 'animate-checkmark-flourish' : ''}`} />}
         </button>
         <span className={`flex-grow text-sm transition-colors ${
             subtask.completed ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300'
@@ -168,6 +180,8 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
 
 const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, isDeleting, activeTimer, onStartTimer, onPauseTimer, onToggleSubtask }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const prevCompleted = useRef(todo.completed);
+  const [isAnimatingComplete, setIsAnimatingComplete] = useState(false);
 
   const isTimerActiveForThisTask = activeTimer?.todoId === todo.id && !activeTimer?.subtaskId;
   const isTimerActiveForASubtask = activeTimer?.todoId === todo.id && !!activeTimer?.subtaskId;
@@ -187,6 +201,17 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
     });
     return () => cancelAnimationFrame(animationFrame);
   }, []);
+
+  useEffect(() => {
+    // Trigger animation only when changing from incomplete to complete
+    if (todo.completed && !prevCompleted.current) {
+        setIsAnimatingComplete(true);
+        // Reset animation state after it finishes
+        const timer = setTimeout(() => setIsAnimatingComplete(false), 500); // 500ms matches animation duration
+        return () => clearTimeout(timer);
+    }
+    prevCompleted.current = todo.completed;
+  }, [todo.completed]);
 
   const renderTimerUI = () => {
     if (isTimerActiveForASubtask) {
@@ -355,7 +380,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
               } ${hasSubtasks ? 'cursor-not-allowed' : ''}`}
               aria-label={todo.completed ? 'Mark as incomplete' : 'Mark as complete'}
             >
-              {todo.completed && <CheckIcon className="h-5 w-5 text-white" />}
+              {todo.completed && <CheckIcon className={`h-5 w-5 text-white ${isAnimatingComplete ? 'animate-checkmark-flourish' : ''}`} />}
             </button>
           </div>
           

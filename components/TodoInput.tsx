@@ -226,7 +226,7 @@ const TodoInput: React.FC<TodoInputProps> = ({ onAddTodo }) => {
                 onKeyDown={handleSubtaskKeyDown}
                 placeholder="min"
                 min="0"
-                className="w-24 p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm text-slate-800 dark:text-slate-200"
+                className="w-20 p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm text-slate-800 dark:text-slate-200"
                 aria-label="Subtask duration in minutes"
             />
             <button

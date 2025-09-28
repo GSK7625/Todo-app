@@ -134,8 +134,8 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
             className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg transition-transform transform duration-300 animate-scale-up max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
         >
-            <h2 id="edit-todo-title" className="text-2xl font-bold text-slate-900 dark:text-white p-6 pb-4 flex-shrink-0">Edit Task</h2>
-            <form id="edit-form" onSubmit={handleSubmit} className="flex flex-col gap-4 p-6 pt-2 overflow-y-auto">
+            <h2 id="edit-todo-title" className="text-2xl font-bold text-slate-900 dark:text-white px-4 pt-5 pb-3 sm:px-6 sm:pt-6 sm:pb-4 flex-shrink-0">Edit Task</h2>
+            <form id="edit-form" onSubmit={handleSubmit} className="flex flex-col gap-4 px-4 sm:px-6 overflow-y-auto">
                 <div>
                     <label htmlFor="edit-text" className="block mb-1 font-medium text-slate-600 dark:text-slate-400">Task</label>
                     <input
@@ -143,7 +143,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-slate-800 dark:text-slate-200"
+                        className="w-full p-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg text-slate-800 dark:text-slate-200"
                     />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -258,7 +258,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                     )}
                 </div>
             </form>
-            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-4 mt-auto p-6 pt-2 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-4 mt-auto p-4 pt-4 sm:p-6 sm:pt-2 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
                 <button
                     type="button"
                     onClick={onCancel}

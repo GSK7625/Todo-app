@@ -439,26 +439,33 @@ const App: React.FC = () => {
     setIsFocusMode(false);
   };
 
-  const focusedTask = useMemo(() => {
+  const focusedTask = useMemo((): Todo | null => {
     if (!activeTimer) return null;
-    const parentTask = todos.find(t => t.id === activeTimer.todoId)
+    const parentTask = todos.find(t => t.id === activeTimer.todoId);
     if (!parentTask) return null;
 
     if (activeTimer.subtaskId) {
         const subtask = parentTask.subtasks?.find(s => s.id === activeTimer.subtaskId);
         if (subtask) {
-            return {
-                ...subtask,
-                text: `${parentTask.text} > ${subtask.text}`, // Combine text for focus view
-                id: parentTask.id, // Keep parent ID for consistency
-            } as Todo;
+            // Create a synthetic Todo object for the subtask to display in focus mode.
+            const syntheticTodo: Todo = {
+                id: subtask.id,
+                text: `${parentTask.text} > ${subtask.text}`,
+                completed: subtask.completed,
+                createdAt: parentTask.createdAt,
+                duration: subtask.duration,
+                timeSpent: subtask.timeSpent,
+                dueDate: parentTask.dueDate,
+                priority: parentTask.priority,
+            };
+            return syntheticTodo;
         }
     }
     return parentTask;
   }, [activeTimer, todos]);
 
   return (
-    <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200 py-6 px-2 sm:px-6 lg:px-8">
+    <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200 py-6 px-4 sm:px-6 lg:px-8">
       {isFocusMode && focusedTask ? (
         <FocusModeView
           task={focusedTask}

@@ -30,14 +30,14 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({ task, timer, onPauseTimer
         <div className="fixed inset-0 bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center p-8 z-40 animate-fade-in">
             <button
                 onClick={onExit}
-                className="absolute top-6 right-6 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition duration-200"
+                className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition duration-200"
             >
-                Exit Focus Mode
+                Exit
             </button>
 
             <div className="text-center">
                 <p className="text-lg text-slate-500 dark:text-slate-400 mb-4">Focusing on:</p>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-12">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-12 break-words">
                     {task.text}
                 </h1>
                 

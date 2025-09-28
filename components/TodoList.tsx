@@ -11,7 +11,7 @@ interface TodoListProps {
   todos: Todo[];
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
-  onEdit: (id: number, text: string) => void;
+  onEdit: (todo: Todo) => void;
   deletingTodoId: number | null;
   activeTimer: ActiveTimer | null;
   onStartTimer: (id: number) => void;

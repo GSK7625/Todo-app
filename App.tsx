@@ -1,9 +1,13 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Todo, Filter, Priority, SortOption } from './types';
 import TodoInput from './components/TodoInput';
 import TodoList from './components/TodoList';
 import TodoFilter from './components/TodoFilter';
 import AmbientSoundPlayer from './components/AmbientSoundPlayer';
+import TodoEditModal from './components/TodoEditModal';
+import { CrosshairsIcon } from './components/icons';
+import FocusModeView from './components/FocusModeView';
 
 type ActiveTimer = {
   todoId: number;
@@ -33,6 +37,8 @@ const App: React.FC = () => {
   const [sort, setSort] = useState<SortOption>(SortOption.CREATED_DESC);
   const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null);
   const [deletingTodoId, setDeletingTodoId] = useState<number | null>(null);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   useEffect(() => {
     try {
@@ -171,16 +177,37 @@ const App: React.FC = () => {
         setDeletingTodoId(null);
     }, 300); // Corresponds to animation duration
   };
+
+  const handleStartEdit = (todo: Todo) => {
+    setEditingTodo(todo);
+  };
   
-  const editTodo = (id: number, text: string) => {
-    if (!text) {
-        deleteTodo(id);
+  const handleCancelEdit = () => {
+    setEditingTodo(null);
+  };
+
+  const handleSaveEdit = (updatedTodoData: Partial<Todo> & { id: number }) => {
+    if (!updatedTodoData.text) {
+        deleteTodo(updatedTodoData.id);
+        setEditingTodo(null);
         return;
     }
-    setTodos(
-      todos.map((todo) => (todo.id === id ? { ...todo, text } : todo))
-    );
+    
+    if (activeTimer?.todoId === updatedTodoData.id) {
+        const originalTodo = todos.find(t => t.id === updatedTodoData.id);
+        if (originalTodo && originalTodo.duration !== updatedTodoData.duration) {
+            handleStopTimer();
+        }
+    }
+      
+    setTodos(todos.map(todo =>
+      todo.id === updatedTodoData.id
+        ? { ...todo, ...updatedTodoData }
+        : todo
+    ));
+    setEditingTodo(null);
   };
+  
 
   const handleStartTimer = (todoId: number) => {
     // If another timer is actively RUNNING, prevent starting a new one.
@@ -269,38 +296,81 @@ const App: React.FC = () => {
 
   const activeCount = useMemo(() => todos.filter(todo => !todo.completed).length, [todos]);
 
+  const enterFocusMode = () => {
+    if (activeTimer) {
+        setIsFocusMode(true);
+    }
+  };
+
+  const exitFocusMode = () => {
+    setIsFocusMode(false);
+  };
+
+  const focusedTask = useMemo(() => {
+    if (!activeTimer) return null;
+    return todos.find(t => t.id === activeTimer.todoId) || null;
+  }, [activeTimer, todos]);
+
   return (
     <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200 py-10 px-4 sm:px-6 lg:px-8">
-      <main className="max-w-xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Todo List</h1>
-          <p className="mt-2 text-slate-500 dark:text-slate-400">
-            You have <span key={activeCount} className="animate-count-up font-bold">{activeCount}</span> task{activeCount !== 1 ? 's' : ''} left to do.
-          </p>
-        </header>
-
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl shadow-lg">
-            <TodoInput onAddTodo={addTodo} />
-            <TodoList 
-              todos={sortedAndFilteredTodos} 
-              onToggle={toggleTodo} 
-              onDelete={deleteTodo}
-              onEdit={editTodo}
-              deletingTodoId={deletingTodoId}
-              activeTimer={activeTimer}
-              onStartTimer={handleStartTimer}
-              onPauseTimer={handlePauseTimer}
-            />
-        </div>
-        
-        <TodoFilter 
-            currentFilter={filter} 
-            onFilterChange={setFilter} 
-            currentSort={sort}
-            onSortChange={setSort}
+      {isFocusMode && focusedTask ? (
+        <FocusModeView
+          task={focusedTask}
+          timer={activeTimer!}
+          onPauseTimer={handlePauseTimer}
+          onExit={exitFocusMode}
         />
-      </main>
+      ) : (
+        <main className="max-w-xl mx-auto">
+          <header className="flex justify-between items-center mb-8">
+            <div className="text-center flex-grow">
+              <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Todo List</h1>
+              <p className="mt-2 text-slate-500 dark:text-slate-400">
+                You have <span key={activeCount} className="animate-count-up font-bold">{activeCount}</span> task{activeCount !== 1 ? 's' : ''} left to do.
+              </p>
+            </div>
+            <button
+              onClick={enterFocusMode}
+              disabled={!activeTimer}
+              className="p-3 text-slate-500 bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-700 disabled:hover:text-slate-500"
+              aria-label="Enter Focus Mode"
+              title={activeTimer ? "Enter Focus Mode" : "Start a timer to use Focus Mode"}
+            >
+              <CrosshairsIcon className="h-6 w-6" />
+            </button>
+          </header>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl shadow-lg">
+              <TodoInput onAddTodo={addTodo} />
+              <TodoList 
+                todos={sortedAndFilteredTodos} 
+                onToggle={toggleTodo} 
+                onDelete={deleteTodo}
+                onEdit={handleStartEdit}
+                deletingTodoId={deletingTodoId}
+                activeTimer={activeTimer}
+                onStartTimer={handleStartTimer}
+                onPauseTimer={handlePauseTimer}
+              />
+          </div>
+          
+          <TodoFilter 
+              currentFilter={filter} 
+              onFilterChange={setFilter} 
+              currentSort={sort}
+              onSortChange={setSort}
+          />
+        </main>
+      )}
+
       <AmbientSoundPlayer />
+      {editingTodo && (
+        <TodoEditModal
+          todo={editingTodo}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
+      )}
     </div>
   );
 };

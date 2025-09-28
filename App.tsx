@@ -7,6 +7,7 @@ import AmbientSoundPlayer from './components/AmbientSoundPlayer';
 import TodoEditModal from './components/TodoEditModal';
 import { CrosshairsIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from './components/icons';
 import FocusModeView from './components/FocusModeView';
+import AchievementsModal from './components/AchievementsModal';
 
 type ActiveTimer = {
   todoId: number;
@@ -63,6 +64,7 @@ const App: React.FC = () => {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -195,9 +197,17 @@ const App: React.FC = () => {
         handleStopTimer();
     }
     setTodos(prevTodos =>
-        prevTodos.map(todo => 
-            todo.id === id ? { ...todo, completed: !todo.completed } : todo
-        )
+      prevTodos.map(todo => {
+        if (todo.id === id) {
+          const isNowCompleted = !todo.completed;
+          return {
+            ...todo,
+            completed: isNowCompleted,
+            completedAt: isNowCompleted ? Date.now() : null,
+          };
+        }
+        return todo;
+      })
     );
   };
 
@@ -219,9 +229,9 @@ const App: React.FC = () => {
           }
 
           const allSubtasksCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(s => s.completed);
-          
           const newCompletedStatus = updatedSubtasks.length > 0 ? allSubtasksCompleted : todo.completed;
-  
+          const newCompletedAt = newCompletedStatus ? (todo.completedAt || Date.now()) : null;
+
           if (newCompletedStatus && !todo.completed && activeTimer?.todoId === todoId && !activeTimer?.subtaskId) {
             handleStopTimer();
           }
@@ -230,6 +240,7 @@ const App: React.FC = () => {
             ...todo,
             subtasks: updatedSubtasks,
             completed: newCompletedStatus,
+            completedAt: newCompletedAt,
           };
         }
         return todo;
@@ -465,7 +476,7 @@ const App: React.FC = () => {
   }, [activeTimer, todos]);
 
   return (
-    <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-slate-800 dark:text-slate-200 py-8 px-4 sm:px-6 lg:px-8">
       {isFocusMode && focusedTask ? (
         <FocusModeView
           task={focusedTask}
@@ -477,15 +488,15 @@ const App: React.FC = () => {
         <main className="max-w-xl mx-auto">
           <header className="flex justify-between items-center mb-8">
             <div className="text-center flex-grow">
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Todo List</h1>
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tighter">Todo List</h1>
               <p className="mt-2 text-slate-500 dark:text-slate-400">
-                You have <span key={activeCount} className="animate-count-up font-bold">{activeCount}</span> task{activeCount !== 1 ? 's' : ''} left to do.
+                You have <span key={activeCount} className="animate-count-up font-bold text-slate-700 dark:text-slate-200">{activeCount}</span> task{activeCount !== 1 ? 's' : ''} left to do.
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsMuted(prev => !prev)}
-                className="p-3 text-slate-500 bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                className="p-3 text-slate-500 bg-white/60 dark:bg-slate-800/60 rounded-full shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 aria-label={isMuted ? "Unmute sound" : "Mute sound"}
                 title={isMuted ? "Unmute sound" : "Mute sound"}
               >
@@ -494,7 +505,7 @@ const App: React.FC = () => {
               <button
                 onClick={enterFocusMode}
                 disabled={!activeTimer}
-                className="p-3 text-slate-500 bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-700 disabled:hover:text-slate-500"
+                className="p-3 text-slate-500 bg-white/60 dark:bg-slate-800/60 rounded-full shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/60 dark:disabled:hover:bg-slate-800/60 disabled:hover:text-slate-500"
                 aria-label="Enter Focus Mode"
                 title={activeTimer ? "Enter Focus Mode" : "Start a timer to use Focus Mode"}
               >
@@ -503,7 +514,7 @@ const App: React.FC = () => {
             </div>
           </header>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl shadow-lg">
+          <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-2xl shadow-slate-300/30 dark:shadow-black/30">
               <TodoInput onAddTodo={addTodo} />
               <TodoList 
                 todos={sortedAndFilteredTodos} 
@@ -521,6 +532,7 @@ const App: React.FC = () => {
                   onFilterChange={setFilter} 
                   currentSort={sort}
                   onSortChange={setSort}
+                  onShowAchievements={() => setIsAchievementsModalOpen(true)}
               />
           </div>
         </main>
@@ -532,6 +544,12 @@ const App: React.FC = () => {
           todo={editingTodo}
           onSave={handleSaveEdit}
           onCancel={handleCancelEdit}
+        />
+      )}
+      {isAchievementsModalOpen && (
+        <AchievementsModal
+          todos={todos}
+          onClose={() => setIsAchievementsModalOpen(false)}
         />
       )}
     </div>

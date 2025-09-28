@@ -11,6 +11,7 @@ export interface Todo {
   text: string;
   completed: boolean;
   createdAt: number;
+  completedAt?: number | null;
   dueDate?: string | null;
   priority?: Priority;
   duration?: number | null; // in minutes

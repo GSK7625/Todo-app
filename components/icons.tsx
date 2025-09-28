@@ -79,3 +79,10 @@ export const CrosshairsIcon: React.FC<{ className?: string }> = ({ className = '
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5V6m0 12v1.5m6-15V6m0 12v1.5M4.5 9H6m12 0h1.5m-15 6H6m12 0h1.5M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
     </svg>
 );
+
+export const TrophyIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9a9.75 9.75 0 0 1 0-18h9a9.75 9.75 0 0 1 0 18Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 1.5V6.75M15 1.5V6.75M3 12.75h18" />
+  </svg>
+);

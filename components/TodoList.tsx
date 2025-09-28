@@ -64,7 +64,7 @@ const TodoList: React.FC<TodoListProps> = ({
 
   if (totalTodos === 0) {
     return (
-      <div className="text-center py-10 px-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+      <div className="text-center py-10 px-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg">
         <p className="text-slate-500 dark:text-slate-400">No tasks yet. Add one to get started!</p>
       </div>
     );
@@ -75,22 +75,26 @@ const TodoList: React.FC<TodoListProps> = ({
       <div className="space-y-6">
         {(todos as GroupedTodos[]).map(group => (
           <section key={group.title} aria-labelledby={`group-header-${group.title.replace(/\s/g, '-')}`}>
-            <h2 
-              id={`group-header-${group.title.replace(/\s/g, '-')}`} 
-              className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pb-2 mb-2 border-b-2 border-slate-200 dark:border-slate-700 flex justify-between items-center"
+            <div 
+              className="pb-2 mb-2 border-b-2 border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between sm:items-center items-start gap-1"
             >
-              <span>{group.title}</span>
+              <h2 
+                id={`group-header-${group.title.replace(/\s/g, '-')}`} 
+                className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+              >
+                {group.title}
+              </h2>
               <div className="flex items-center gap-2">
                 {group.totalDuration > 0 && (
                   <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${
-                    group.totalDuration > 1440 ? 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 font-bold' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                    group.totalDuration > 1440 ? 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 font-bold' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}>
                     {formatTotalDuration(group.totalDuration)}
                   </span>
                 )}
                 <span className="text-xs font-mono bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full px-2 py-0.5">{group.todos.length}</span>
               </div>
-            </h2>
+            </div>
             <ul className="space-y-3">
               {group.todos.map(todo => (
                 <TodoItem

@@ -73,14 +73,45 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
         alert("The sum of subtask durations cannot exceed the total task duration.");
         return;
     }
+    
+    const newTotalDuration = totalDurationInMinutes > 0 ? totalDurationInMinutes : null;
+
+    // Process subtasks to reset timeSpent only if their duration has changed.
+    const updatedSubtasks = subtasks.map(currentSubtask => {
+        const originalSubtask = todo.subtasks?.find(s => s.id === currentSubtask.id);
+        
+        // If it's a new subtask, it will have timeSpent: 0 by default.
+        // If an existing subtask's duration changes, reset its timeSpent.
+        if (originalSubtask && originalSubtask.duration !== currentSubtask.duration) {
+            return { ...currentSubtask, timeSpent: 0 };
+        }
+        
+        // Otherwise, return the subtask with its timeSpent preserved.
+        return currentSubtask;
+    });
+    
+    let finalTimeSpent;
+
+    if (updatedSubtasks.length > 0) {
+        // For tasks with subtasks, total time spent is the sum of subtasks' time.
+        finalTimeSpent = updatedSubtasks.reduce((sum, s) => sum + (s.timeSpent || 0), 0);
+    } else {
+        // For tasks without subtasks, check if the main duration has changed.
+        if (todo.duration !== newTotalDuration) {
+            finalTimeSpent = 0; // Reset time if duration changes.
+        } else {
+            finalTimeSpent = todo.timeSpent || 0; // Preserve original time spent.
+        }
+    }
+
     onSave({
       id: todo.id,
       text: text.trim(),
       dueDate: dueDate || null,
       priority,
-      duration: totalDurationInMinutes > 0 ? totalDurationInMinutes : null,
-      subtasks,
-      timeSpent: subtasks.reduce((sum, s) => sum + (s.timeSpent || 0), 0),
+      duration: newTotalDuration,
+      subtasks: updatedSubtasks,
+      timeSpent: finalTimeSpent,
     });
   };
 
@@ -107,11 +138,11 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
   }
 
   const unitButtonClass = (unit: 'minutes' | 'hours') => {
-    const base = 'px-3 py-2 border text-xs font-bold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    const base = 'px-3 py-2 border text-xs font-bold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500';
     if (unit === durationUnit) {
-      return `${base} bg-blue-600 text-white border-blue-600`;
+      return `${base} bg-indigo-600 text-white border-indigo-600`;
     }
-    return `${base} bg-white dark:bg-slate-700 text-slate-500 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600`;
+    return `${base} bg-slate-100 dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600`;
   }
 
   const handleSubtaskKeyDown = (e: React.KeyboardEvent) => {
@@ -120,6 +151,8 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
         handleAddSubtask();
     }
   };
+  
+  const inputStyles = "w-full p-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-slate-800 dark:text-slate-200";
 
   return (
     <div 
@@ -131,7 +164,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
     >
         <div 
             ref={modalRef}
-            className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg transition-transform transform duration-300 animate-scale-up max-h-[90vh] flex flex-col"
+            className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg transition-transform transform duration-300 animate-scale-up max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
         >
             <h2 id="edit-todo-title" className="text-2xl font-bold text-slate-900 dark:text-white px-4 pt-5 pb-3 sm:px-6 sm:pt-6 sm:pb-4 flex-shrink-0">Edit Task</h2>
@@ -143,7 +176,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg text-slate-800 dark:text-slate-200"
+                        className="w-full p-3 bg-slate-100 dark:bg-slate-700/70 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-lg text-slate-800 dark:text-slate-200"
                     />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -154,7 +187,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                             type="date"
                             value={dueDate}
                             onChange={(e) => setDueDate(e.target.value)}
-                            className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-slate-800 dark:text-slate-200"
+                            className={inputStyles}
                         />
                     </div>
                     <div>
@@ -163,7 +196,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                             id="edit-priority"
                             value={priority}
                             onChange={(e) => setPriority(e.target.value as Priority)}
-                            className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-slate-800 dark:text-slate-200"
+                            className={inputStyles}
                         >
                             <option value={Priority.LOW}>Low</option>
                             <option value={Priority.MEDIUM}>Medium</option>
@@ -181,7 +214,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                             onChange={(e) => setDurationValue(e.target.value)}
                             placeholder={durationUnit === 'hours' ? 'e.g., 2' : 'e.g., 30'}
                             min="0"
-                            className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-slate-800 dark:text-slate-200 z-10"
+                            className="w-full p-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-slate-800 dark:text-slate-200 z-10"
                         />
                         <button type="button" onClick={() => setDurationUnit('minutes')} className={`${unitButtonClass('minutes')} -ml-px`}>min</button>
                         <button type="button" onClick={() => setDurationUnit('hours')} className={`${unitButtonClass('hours')} rounded-r-lg`}>hr</button>
@@ -198,24 +231,24 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                     <div className="flex justify-between items-center mb-2">
                         <label className="block font-medium text-slate-600 dark:text-slate-400">Subtasks</label>
                         {totalDurationInMinutes > 0 && (
-                             <div className={`text-xs font-mono p-1 px-2 rounded-full ${remainingDuration < 0 ? 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-slate-200 dark:bg-slate-600'}`}>
+                             <div className={`text-xs font-mono p-1 px-2 rounded-full ${remainingDuration < 0 ? 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-slate-200 dark:bg-slate-700'}`}>
                                 <span>{allocatedDuration} / {totalDurationInMinutes} min</span>
                             </div>
                         )}
                     </div>
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
                         {subtasks.map(sub => (
-                            <div key={sub.id} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700/50 p-2 rounded-md">
+                            <div key={sub.id} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/70 p-2 rounded-md">
                                 <span className="flex-grow text-slate-800 dark:text-slate-200">{sub.text}</span>
                                 {sub.duration && (
-                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 px-2 py-1 rounded-full whitespace-nowrap">
+                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full whitespace-nowrap">
                                         {sub.duration} min
                                     </span>
                                 )}
                                 <button
                                     type="button"
                                     onClick={() => handleDeleteSubtask(sub.id)}
-                                    className="p-1 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600"
+                                    className="p-1 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"
                                     aria-label={`Delete subtask: ${sub.text}`}
                                 >
                                     <TrashIcon className="h-4 w-4" />
@@ -231,7 +264,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                             onChange={(e) => setNewSubtaskText(e.target.value)}
                             onKeyDown={handleSubtaskKeyDown}
                             placeholder="Add a new subtask..."
-                            className="flex-grow p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm text-slate-800 dark:text-slate-200"
+                            className="flex-grow py-1 px-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-sm text-slate-800 dark:text-slate-200"
                         />
                         <input
                             type="number"
@@ -240,14 +273,14 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                             onKeyDown={handleSubtaskKeyDown}
                             placeholder="min"
                             min="0"
-                            className="w-24 p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm text-slate-800 dark:text-slate-200"
+                            className="w-16 py-1 px-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-sm text-slate-800 dark:text-slate-200"
                             aria-label="Subtask duration in minutes"
                         />
                         <button
                             type="button"
                             onClick={handleAddSubtask}
                             disabled={!canAddSubtask}
-                            className="bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 p-2 rounded-lg shadow-sm hover:bg-slate-300 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 p-2 rounded-lg shadow-sm hover:bg-slate-300 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label="Add subtask"
                         >
                            <PlusIcon className="h-5 w-5" />
@@ -262,14 +295,14 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition duration-200"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition duration-200"
                 >
                     Cancel
                 </button>
                 <button
                     type="submit"
                     form="edit-form"
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition duration-200"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition duration-200"
                 >
                     Save Changes
                 </button>

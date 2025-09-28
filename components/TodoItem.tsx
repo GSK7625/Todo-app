@@ -24,15 +24,29 @@ interface TodoItemProps {
 const getPriorityClass = (priority?: Priority) => {
   switch (priority) {
     case Priority.HIGH:
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      return 'bg-red-500/10 text-red-600 dark:bg-red-500/10 dark:text-red-400';
     case Priority.MEDIUM:
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      return 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400';
     case Priority.LOW:
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      return 'bg-sky-500/10 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400';
     default:
       return 'bg-slate-100 text-slate-800 dark:bg-slate-600 dark:text-slate-200';
   }
 };
+
+const getPriorityIndicatorClass = (priority?: Priority) => {
+  switch (priority) {
+    case Priority.HIGH:
+      return 'bg-red-400';
+    case Priority.MEDIUM:
+      return 'bg-amber-400';
+    case Priority.LOW:
+      return 'bg-sky-400';
+    default:
+      return 'bg-slate-400';
+  }
+};
+
 
 const formatDuration = (minutes?: number | null): string => {
   if (!minutes || minutes <= 0) return '';
@@ -102,7 +116,7 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
             return (
                  <button 
                     onClick={onPauseTimer} 
-                    className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="p-2 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     aria-label={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
                     title={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
                 >
@@ -115,7 +129,7 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
             <button 
                 onClick={() => onStartTimer(todoId, subtask.id)} 
                 disabled={isAnotherTimerRunning}
-                className="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Start subtask timer"
                 title="Start subtask timer"
             >
@@ -154,15 +168,15 @@ const SubtaskItem: React.FC<SubtaskItemProps> = ({
         <div className="flex items-center gap-3">
         <button
             onClick={onToggle}
-            className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center flex-shrink-0 ${
+            className={`w-6 h-6 rounded border-2 transition-all duration-200 flex items-center justify-center flex-shrink-0 ${
             subtask.completed
-                ? 'bg-blue-500 border-blue-500'
-                : `border-slate-400 dark:border-slate-500 ${isParentCompleted ? '' : 'hover:border-blue-500'}`
+                ? 'bg-indigo-500 border-indigo-500'
+                : `border-slate-400 dark:border-slate-500 ${isParentCompleted ? '' : 'hover:border-indigo-500'}`
             }`}
             aria-label={subtask.completed ? 'Mark subtask as incomplete' : 'Mark subtask as complete'}
             disabled={isParentCompleted}
         >
-            {subtask.completed && <CheckIcon className={`h-3 w-3 text-white ${isAnimatingComplete ? 'animate-checkmark-flourish' : ''}`} />}
+            {subtask.completed && <CheckIcon className={`h-4 w-4 text-white ${isAnimatingComplete ? 'animate-checkmark-flourish' : ''}`} />}
         </button>
         <span className={`flex-grow text-sm transition-colors ${
             subtask.completed ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300'
@@ -186,6 +200,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
   const isTimerActiveForThisTask = activeTimer?.todoId === todo.id && !activeTimer?.subtaskId;
   const isTimerActiveForASubtask = activeTimer?.todoId === todo.id && !!activeTimer?.subtaskId;
   const isAnotherTimerRunning = !!(activeTimer?.isRunning && activeTimer?.todoId !== todo.id);
+  const isThisTaskTimerRunning = isTimerActiveForThisTask && !!activeTimer?.isRunning;
   
   const totalTimeSpentOnSubtasks = todo.subtasks?.reduce((sum, s) => sum + (s.timeSpent || 0), 0) ?? 0;
   const totalTimeSpent = todo.subtasks && todo.subtasks.length > 0 ? totalTimeSpentOnSubtasks : (todo.timeSpent || 0);
@@ -203,150 +218,114 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
   }, []);
 
   useEffect(() => {
-    // Trigger animation only when changing from incomplete to complete
     if (todo.completed && !prevCompleted.current) {
         setIsAnimatingComplete(true);
-        // Reset animation state after it finishes
-        const timer = setTimeout(() => setIsAnimatingComplete(false), 500); // 500ms matches animation duration
+        const timer = setTimeout(() => setIsAnimatingComplete(false), 500);
         return () => clearTimeout(timer);
     }
     prevCompleted.current = todo.completed;
   }, [todo.completed]);
 
-  const renderTimerUI = () => {
-    if (isTimerActiveForASubtask) {
-        const activeSubtask = todo.subtasks!.find(s => s.id === activeTimer!.subtaskId);
-        if (!activeSubtask) return null; // Safety check
+  const renderTimerOrMetadata = () => {
+    const isTimerAssociatedWithThisTask = activeTimer?.todoId === todo.id;
+    const shouldShowTimerUI = isTimerAssociatedWithThisTask || (hasProgress && !todo.completed);
 
-        // Calculate time spent on the currently running subtask
-        const timeSpentOnActiveSubtask = ((activeSubtask.duration || 0) * 60) - activeTimer!.remainingSeconds;
+    if (shouldShowTimerUI) {
+        let currentTotalTimeSpent = 0;
+        let totalRemainingSeconds = 0;
 
-        // Calculate time spent on all other subtasks
-        const timeSpentOnOtherSubtasks = todo.subtasks!
-            .filter(s => s.id !== activeTimer!.subtaskId)
-            .reduce((sum, s) => sum + (s.timeSpent || 0), 0);
-        
-        const currentTotalTimeSpent = timeSpentOnActiveSubtask + timeSpentOnOtherSubtasks;
-        const totalRemainingSeconds = totalDurationInSeconds - currentTotalTimeSpent;
+        if (isTimerActiveForASubtask) {
+            const activeSubtask = todo.subtasks!.find(s => s.id === activeTimer!.subtaskId)!;
+            const timeSpentOnActiveSubtask = ((activeSubtask.duration || 0) * 60) - activeTimer!.remainingSeconds;
+            const timeSpentOnOtherSubtasks = todo.subtasks!.filter(s => s.id !== activeTimer!.subtaskId).reduce((sum, s) => sum + (s.timeSpent || 0), 0);
+            currentTotalTimeSpent = timeSpentOnActiveSubtask + timeSpentOnOtherSubtasks;
+            totalRemainingSeconds = totalDurationInSeconds - currentTotalTimeSpent;
+        } else if (isTimerActiveForThisTask) {
+            currentTotalTimeSpent = totalDurationInSeconds - activeTimer!.remainingSeconds;
+            totalRemainingSeconds = activeTimer!.remainingSeconds;
+        } else { // hasProgress but no active timer for this task
+            currentTotalTimeSpent = totalTimeSpent;
+            totalRemainingSeconds = totalDurationInSeconds - totalTimeSpent;
+        }
+
         const progress = totalDurationInSeconds > 0 ? (currentTotalTimeSpent / totalDurationInSeconds) * 100 : 0;
 
         return (
-            <div className="flex items-center justify-between gap-4 flex-grow p-2 bg-slate-100 dark:bg-slate-800/60 rounded-lg" title="Overall task progress based on subtasks">
+            <div className="flex items-center justify-between gap-4 flex-grow">
                 <div className="flex items-center gap-3 flex-grow min-w-0">
-                    {totalDurationInSeconds > 0 && (
-                        <div className="w-full bg-slate-300 dark:bg-slate-600 rounded-full h-3 overflow-hidden">
+                    {totalDurationInSeconds > 0 ? (
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-8 relative flex items-center overflow-hidden" title={`Progress: ${Math.round(progress)}%`}>
                             <div 
-                                className="bg-gradient-to-r from-cyan-400 to-blue-600 h-3 rounded-full transition-all duration-200 ease-linear" 
-                                style={{ width: `${Math.min(progress, 100)}%` }}>
+                                className="bg-gradient-to-r from-violet-500 to-indigo-600 h-full absolute top-0 left-0 rounded-full transition-all duration-200 ease-linear" 
+                                style={{ width: `${Math.min(progress, 100)}%` }} 
+                            />
+                            <div className="relative w-full flex justify-between items-center z-10 px-3">
+                                <span className="font-semibold text-white/90 [text-shadow:0_1px_2px_rgb(0_0_0_/_0.5)] truncate pr-2 flex-grow min-w-0">
+                                    {isThisTaskTimerRunning ? (
+                                        <span className="text-xs font-mono">{formatTime(currentTotalTimeSpent)} spent</span>
+                                    ) : (
+                                        <span className="flex items-center gap-1.5 text-sm capitalize">
+                                            <span className={`w-2 h-2 rounded-full ${getPriorityIndicatorClass(todo.priority)}`}></span>
+                                            <span>{todo.priority}</span>
+                                        </span>
+                                    )}
+                                </span>
+                                <span className="text-xs font-mono font-semibold text-white/90 [text-shadow:0_1px_2px_rgb(0_0_0_/_0.5)] flex-shrink-0">
+                                    {formatTime(totalRemainingSeconds)} left
+                                </span>
                             </div>
                         </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                            <HourglassIcon className="h-4 w-4" />
+                            <span className="text-sm font-semibold font-mono">
+                                {formatTime(currentTotalTimeSpent)} spent
+                            </span>
+                        </div>
                     )}
-                    <div className="flex items-center gap-1.5 w-24 justify-end" title="Total remaining time">
-                        <HourglassIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                        <span className="text-base font-semibold font-mono text-slate-700 dark:text-slate-200">
-                            {formatTime(totalRemainingSeconds)}
-                        </span>
-                    </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {!isTimerActiveForASubtask && (
+                        <button 
+                            onClick={isTimerActiveForThisTask ? onPauseTimer : () => onStartTimer(todo.id)}
+                            disabled={isDeleting || (hasProgress && (hasSubtasksWithDurations || !todo.duration))}
+                            className="p-3 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label={isThisTaskTimerRunning ? 'Pause timer' : 'Resume timer'}
+                            title={isThisTaskTimerRunning ? 'Pause timer' : 'Resume timer'}
+                        >
+                            {isThisTaskTimerRunning ? <PauseIcon className="h-5 w-5"/> : <PlayIcon className="h-5 w-5"/>}
+                        </button>
+                    )}
                 </div>
             </div>
         );
     }
-
-    if (isTimerActiveForThisTask) {
-      const timeSpent = totalDurationInSeconds - activeTimer.remainingSeconds;
-      const progress = totalDurationInSeconds > 0 ? (timeSpent / totalDurationInSeconds) * 100 : 0;
-      return (
-        <div className="flex items-center justify-between gap-4 flex-grow p-2 bg-slate-100 dark:bg-slate-800/60 rounded-lg">
-            <div className="flex items-center gap-3 flex-grow min-w-0">
-                {totalDurationInSeconds > 0 && (
-                    <div className="w-full bg-slate-300 dark:bg-slate-600 rounded-full h-3 overflow-hidden">
-                        <div 
-                            className="bg-gradient-to-r from-cyan-400 to-blue-600 h-3 rounded-full transition-all duration-200 ease-linear" 
-                            style={{ width: `${Math.min(progress, 100)}%` }}>
-                        </div>
-                    </div>
-                )}
-                <div className={`flex items-center gap-1.5 ${totalDurationInSeconds > 0 ? 'w-24 justify-end' : 'flex-grow'}`}>
-                    <HourglassIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                    <span className="text-base font-semibold font-mono text-slate-700 dark:text-slate-200">
-                        {formatTime(activeTimer.remainingSeconds)}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-                <button 
-                    onClick={onPauseTimer} 
-                    disabled={isDeleting}
-                    className="p-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-                    aria-label={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
-                    title={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
-                >
-                    {activeTimer.isRunning ? <PauseIcon className="h-5 w-5"/> : <PlayIcon className="h-5 w-5"/>}
-                </button>
-            </div>
-        </div>
-      );
-    }
     
-    if (hasProgress && !todo.completed) {
-       const progress = totalDurationInSeconds > 0 ? (totalTimeSpent / totalDurationInSeconds) * 100 : 0;
-       const remainingSeconds = totalDurationInSeconds - totalTimeSpent;
-       return (
-        <div className="flex items-center justify-between gap-4 flex-grow p-2 bg-slate-100 dark:bg-slate-800/60 rounded-lg">
-            <div className="flex items-center gap-3 flex-grow min-w-0">
-                 {totalDurationInSeconds > 0 && (
-                    <div className="w-full bg-slate-300 dark:bg-slate-600 rounded-full h-3 overflow-hidden">
-                        <div 
-                            className="bg-gradient-to-r from-cyan-400 to-blue-600 h-3 rounded-full" 
-                            style={{ width: `${Math.min(progress, 100)}%` }}>
-                        </div>
-                    </div>
-                 )}
-                <div className={`flex items-center gap-1.5 ${totalDurationInSeconds > 0 ? 'w-24 justify-end' : 'flex-grow'}`}>
-                    <HourglassIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                    <span className="text-base font-semibold font-mono text-slate-700 dark:text-slate-200">
-                        {formatTime(remainingSeconds)}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-                <button 
-                    onClick={() => onStartTimer(todo.id)} 
-                    disabled={isAnotherTimerRunning || !todo.duration || isDeleting || hasSubtasksWithDurations}
-                    className="p-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Resume timer") : "Set a duration to start timer"}
-                    title={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Resume timer") : "Set a duration to start timer"}
-                >
-                    <PlayIcon className="h-5 w-5"/>
-                </button>
-            </div>
-        </div>
-      );
-    }
-
+    // Idle state
     return (
         <>
-            {todo.duration && (
-                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline bg-slate-200 dark:bg-slate-600 px-2 py-1 rounded">
-                    Est: {formatDuration(todo.duration)}
-                </span>
-            )}
-             {todo.dueDate && (
-                <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">
-                  {new Date(todo.dueDate + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-            )}
-            {todo.priority && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getPriorityClass(todo.priority)}`}>
-                {todo.priority}
-              </span>
-            )}
-
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs flex-grow">
+                {todo.priority && (
+                  <span className={`px-2 py-0.5 rounded-full font-medium capitalize ${getPriorityClass(todo.priority)}`}>
+                    {todo.priority}
+                  </span>
+                )}
+                {todo.dueDate && (
+                    <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                      {new Date(todo.dueDate + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                )}
+                {todo.duration && (
+                    <span className="font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">
+                        Est: {formatDuration(todo.duration)}
+                    </span>
+                )}
+            </div>
             {!todo.completed && (
                 <button
                     onClick={() => onStartTimer(todo.id)}
                     disabled={isAnotherTimerRunning || !todo.duration || isDeleting || hasSubtasksWithDurations}
-                    className="p-3 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 -mr-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Start timer") : "Set a duration to start timer"}
                     title={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Start timer") : "Set a duration to start timer"}
                 >
@@ -363,20 +342,20 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
 
   return (
     <li
-      className={`flex flex-col p-3 rounded-lg transition-all duration-300 ease-out shadow-sm gap-2 ${
-        todo.completed ? 'bg-slate-200 dark:bg-slate-800 opacity-70' : 'bg-white dark:bg-slate-700'
+      className={`flex flex-col p-3 rounded-xl transition-all duration-300 ease-out shadow-md shadow-slate-200/50 dark:shadow-black/20 gap-1 ${
+        todo.completed ? 'bg-slate-100 dark:bg-slate-800/70 opacity-70' : 'bg-white/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60'
       } ${isDeleting ? 'opacity-0 scale-95' : isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
     >
       <div className="flex items-center">
-        <div className="flex items-center flex-grow">
+        <div className="flex items-center flex-grow min-w-0">
           <div className="relative" title={hasSubtasks ? "Complete all subtasks to finish this task" : (todo.completed ? 'Mark as incomplete' : 'Mark as complete')}>
             <button
               onClick={() => onToggle(todo.id)}
               disabled={isDeleting || hasSubtasks}
               className={`w-7 h-7 rounded-full border-2 transition-all duration-200 flex items-center justify-center mr-4 flex-shrink-0 disabled:opacity-50 ${
                 todo.completed
-                  ? 'bg-green-500 border-green-500'
-                  : `border-slate-300 dark:border-slate-500 ${!hasSubtasks && 'hover:border-green-500'}`
+                  ? 'bg-indigo-500 border-indigo-500'
+                  : `border-slate-300 dark:border-slate-600 ${!hasSubtasks && 'hover:border-indigo-500'}`
               } ${hasSubtasks ? 'cursor-not-allowed' : ''}`}
               aria-label={todo.completed ? 'Mark as incomplete' : 'Mark as complete'}
             >
@@ -385,7 +364,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
           </div>
           
           <span
-              className={`relative flex-grow text-left transition-colors duration-300 ease-in-out after:content-[''] after:absolute after:top-1/2 after:left-0 after:h-[1.5px] after:w-full after:origin-left after:bg-current after:transition-transform after:duration-300 after:ease-in-out ${
+              className={`relative flex-grow text-left transition-colors duration-300 ease-in-out truncate after:content-[''] after:absolute after:top-1/2 after:left-0 after:h-[2px] after:w-full after:origin-left after:bg-current after:transition-transform after:duration-300 after:ease-in-out ${
                   todo.completed
                   ? 'text-slate-500 dark:text-slate-400 after:scale-x-100'
                   : 'text-slate-800 dark:text-slate-200 after:scale-x-0'
@@ -396,14 +375,11 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
         </div>
 
 
-        <div className="flex items-center ml-auto space-x-3 pl-4 sm:pl-0 flex-shrink-0">
-          <div className="hidden sm:flex items-center space-x-3">
-            {renderTimerUI()}
-          </div>
+        <div className="flex items-center ml-auto space-x-1 pl-2 flex-shrink-0">
           <button
             onClick={() => onEdit(todo)}
             disabled={isDeleting}
-            className="p-3 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"
+            className="p-2 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
             aria-label="Edit todo"
             title="Edit todo"
           >
@@ -412,7 +388,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
           <button
             onClick={() => onDelete(todo.id)}
             disabled={isDeleting}
-            className="p-3 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"
+            className="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
             aria-label="Delete todo"
             title="Delete todo"
           >
@@ -420,10 +396,9 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
           </button>
         </div>
       </div>
-      <div className="sm:hidden mt-2">
-        <div className="flex items-center justify-end w-full">
-         {renderTimerUI()}
-        </div>
+
+      <div className="pl-11 flex items-center gap-2 min-h-[2rem]">
+        {renderTimerOrMetadata()}
       </div>
       
       {hasSubtasks && (
@@ -432,9 +407,9 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 w-12 text-right">
                 {todo.subtasks!.filter(s => s.completed).length}/{todo.subtasks!.length}
             </span>
-            <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
+            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                 <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out" 
+                    className="bg-indigo-500 h-2 rounded-full transition-all duration-300 ease-out" 
                     style={{ width: `${subtaskProgress}%` }}>
                 </div>
             </div>

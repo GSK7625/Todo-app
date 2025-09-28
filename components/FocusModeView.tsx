@@ -37,11 +37,11 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({ task, timer, onPauseTimer
 
             <div className="text-center">
                 <p className="text-lg text-slate-500 dark:text-slate-400 mb-4">Focusing on:</p>
-                <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-12">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-12">
                     {task.text}
                 </h1>
                 
-                <div className="text-8xl md:text-9xl font-mono font-bold text-slate-900 dark:text-white mb-12 tracking-wider">
+                <div className="text-7xl sm:text-8xl md:text-9xl font-mono font-bold text-slate-900 dark:text-white mb-12 tracking-wider">
                     {formatTime(timer.remainingSeconds)}
                 </div>
 

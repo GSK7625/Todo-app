@@ -131,11 +131,11 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
     >
         <div 
             ref={modalRef}
-            className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-lg transition-transform transform duration-300 animate-scale-up"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg transition-transform transform duration-300 animate-scale-up max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
         >
-            <h2 id="edit-todo-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Edit Task</h2>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <h2 id="edit-todo-title" className="text-2xl font-bold text-slate-900 dark:text-white p-6 pb-4 flex-shrink-0">Edit Task</h2>
+            <form id="edit-form" onSubmit={handleSubmit} className="flex flex-col gap-4 p-6 pt-2 overflow-y-auto">
                 <div>
                     <label htmlFor="edit-text" className="block mb-1 font-medium text-slate-600 dark:text-slate-400">Task</label>
                     <input
@@ -257,23 +257,23 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                         <p className="text-xs text-red-500 mt-1">{subtaskDurationError}</p>
                     )}
                 </div>
-                
-                <div className="flex justify-end gap-4 mt-6">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition duration-200"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition duration-200"
-                    >
-                        Save Changes
-                    </button>
-                </div>
             </form>
+            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-4 mt-auto p-6 pt-2 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition duration-200"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    form="edit-form"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition duration-200"
+                >
+                    Save Changes
+                </button>
+            </div>
         </div>
     </div>
   );

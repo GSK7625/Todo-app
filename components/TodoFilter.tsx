@@ -24,10 +24,10 @@ const TodoFilter: React.FC<TodoFilterProps> = ({ currentFilter, onFilterChange, 
   };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-2 bg-slate-200 dark:bg-slate-800 rounded-lg mt-6">
-      <div className="flex justify-center space-x-2" role="group" aria-label="Filter tasks">
+    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 mt-6 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex w-full sm:w-auto justify-stretch sm:justify-center space-x-2" role="group" aria-label="Filter tasks">
         {filters.map(({ key, label }) => (
-          <button key={key} onClick={() => onFilterChange(key)} className={getButtonClass(key)}>
+          <button key={key} onClick={() => onFilterChange(key)} className={`${getButtonClass(key)} flex-grow sm:flex-grow-0`}>
             {label}
           </button>
         ))}

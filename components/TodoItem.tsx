@@ -252,7 +252,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
                 <button 
                     onClick={onPauseTimer} 
                     disabled={isDeleting}
-                    className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                    className="p-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                     aria-label={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
                     title={activeTimer.isRunning ? 'Pause timer' : 'Resume timer'}
                 >
@@ -288,7 +288,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
                 <button 
                     onClick={() => onStartTimer(todo.id)} 
                     disabled={isAnotherTimerRunning || !todo.duration || isDeleting || hasSubtasksWithDurations}
-                    className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Resume timer") : "Set a duration to start timer"}
                     title={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Resume timer") : "Set a duration to start timer"}
                 >
@@ -321,7 +321,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
                 <button
                     onClick={() => onStartTimer(todo.id)}
                     disabled={isAnotherTimerRunning || !todo.duration || isDeleting || hasSubtasksWithDurations}
-                    className="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-3 text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Start timer") : "Set a duration to start timer"}
                     title={todo.duration ? (hasSubtasksWithDurations ? "Start subtask timers individually" : "Start timer") : "Set a duration to start timer"}
                 >
@@ -348,14 +348,14 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
             <button
               onClick={() => onToggle(todo.id)}
               disabled={isDeleting || hasSubtasks}
-              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex items-center justify-center mr-4 flex-shrink-0 disabled:opacity-50 ${
+              className={`w-7 h-7 rounded-full border-2 transition-all duration-200 flex items-center justify-center mr-4 flex-shrink-0 disabled:opacity-50 ${
                 todo.completed
                   ? 'bg-green-500 border-green-500'
                   : `border-slate-300 dark:border-slate-500 ${!hasSubtasks && 'hover:border-green-500'}`
               } ${hasSubtasks ? 'cursor-not-allowed' : ''}`}
               aria-label={todo.completed ? 'Mark as incomplete' : 'Mark as complete'}
             >
-              {todo.completed && <CheckIcon className="h-4 w-4 text-white" />}
+              {todo.completed && <CheckIcon className="h-5 w-5 text-white" />}
             </button>
           </div>
           
@@ -378,7 +378,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
           <button
             onClick={() => onEdit(todo)}
             disabled={isDeleting}
-            className="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"
+            className="p-3 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"
             aria-label="Edit todo"
             title="Edit todo"
           >
@@ -387,7 +387,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, i
           <button
             onClick={() => onDelete(todo.id)}
             disabled={isDeleting}
-            className="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"
+            className="p-3 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"
             aria-label="Delete todo"
             title="Delete todo"
           >

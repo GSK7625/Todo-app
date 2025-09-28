@@ -137,8 +137,8 @@ const TodoInput: React.FC<TodoInputProps> = ({ onAddTodo }) => {
           <PlusIcon className="h-6 w-6" />
         </button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-        <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+        <div className="col-span-1">
             <label htmlFor="due-date" className="block mb-1 font-medium text-slate-600 dark:text-slate-400">Due Date</label>
             <input
               id="due-date"
@@ -148,7 +148,7 @@ const TodoInput: React.FC<TodoInputProps> = ({ onAddTodo }) => {
               className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-slate-800 dark:text-slate-200"
             />
         </div>
-        <div>
+        <div className="col-span-1">
             <label htmlFor="priority" className="block mb-1 font-medium text-slate-600 dark:text-slate-400">Priority</label>
             <select
                 id="priority"
@@ -161,7 +161,7 @@ const TodoInput: React.FC<TodoInputProps> = ({ onAddTodo }) => {
                 <option value={Priority.HIGH}>High</option>
             </select>
         </div>
-        <div>
+        <div className="col-span-2 sm:col-span-1">
             <label htmlFor="duration" className="block mb-1 font-medium text-slate-600 dark:text-slate-400">Duration</label>
             <div className="flex">
                 <input

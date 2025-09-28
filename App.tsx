@@ -458,7 +458,7 @@ const App: React.FC = () => {
   }, [activeTimer, todos]);
 
   return (
-    <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200 py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200 py-6 px-2 sm:px-6 lg:px-8">
       {isFocusMode && focusedTask ? (
         <FocusModeView
           task={focusedTask}
@@ -470,7 +470,7 @@ const App: React.FC = () => {
         <main className="max-w-xl mx-auto">
           <header className="flex justify-between items-center mb-8">
             <div className="text-center flex-grow">
-              <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Todo List</h1>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Todo List</h1>
               <p className="mt-2 text-slate-500 dark:text-slate-400">
                 You have <span key={activeCount} className="animate-count-up font-bold">{activeCount}</span> task{activeCount !== 1 ? 's' : ''} left to do.
               </p>
@@ -509,14 +509,13 @@ const App: React.FC = () => {
                 onPauseTimer={handlePauseTimer}
                 onToggleSubtask={toggleSubtask}
               />
+              <TodoFilter 
+                  currentFilter={filter} 
+                  onFilterChange={setFilter} 
+                  currentSort={sort}
+                  onSortChange={setSort}
+              />
           </div>
-          
-          <TodoFilter 
-              currentFilter={filter} 
-              onFilterChange={setFilter} 
-              currentSort={sort}
-              onSortChange={setSort}
-          />
         </main>
       )}
 

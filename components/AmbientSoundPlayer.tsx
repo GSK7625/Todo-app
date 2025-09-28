@@ -37,8 +37,6 @@ const AmbientSoundPlayer: React.FC<AmbientSoundPlayerProps> = ({ isPlaying, isMu
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
                     console.error("Audio play failed:", error);
-                    // This can happen if user hasn't interacted with the page yet.
-                    // Starting a timer counts as interaction, so this should be rare.
                 });
             }
         } else {

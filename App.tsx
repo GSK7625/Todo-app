@@ -65,6 +65,25 @@ const App: React.FC = () => {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  useEffect(() => {
+    const handleInteraction = () => {
+      setHasInteracted(true);
+    };
+
+    // Listen for the first user interaction to enable audio.
+    window.addEventListener('click', handleInteraction, { once: true });
+    window.addEventListener('keydown', handleInteraction, { once: true });
+    window.addEventListener('touchstart', handleInteraction, { once: true });
+
+    return () => {
+      // Cleanup is good practice, although 'once' listeners remove themselves.
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -270,23 +289,63 @@ const App: React.FC = () => {
     setEditingTodo(null);
   };
 
-  const handleSaveEdit = (updatedTodoData: Partial<Todo> & { id: number }) => {
+  const handleSaveEdit = (updatedTodoData: {
+    id: number;
+    text: string;
+    dueDate: string | null;
+    priority: Priority;
+    duration: number | null;
+    subtasks: Subtask[];
+    resetTime: boolean;
+  }) => {
     if (!updatedTodoData.text) {
         deleteTodo(updatedTodoData.id);
         setEditingTodo(null);
         return;
     }
     
-    // Stop any active timer related to this todo if durations changed
     if (activeTimer?.todoId === updatedTodoData.id) {
         handleStopTimer();
     }
       
-    setTodos(todos.map(todo =>
-      todo.id === updatedTodoData.id
-        ? { ...todo, ...updatedTodoData }
-        : todo
-    ));
+    setTodos(prevTodos => prevTodos.map(todo => {
+      if (todo.id !== updatedTodoData.id) {
+        return todo;
+      }
+      
+      const { resetTime, subtasks: modalSubtasks, ...modalData } = updatedTodoData;
+
+      // Start with the latest version of the todo from state (which has updated timeSpent from handleStopTimer).
+      const newTodo = { ...todo, ...modalData };
+
+      let finalSubtasks;
+      if (resetTime) {
+        // If resetting time, take the subtask list from the modal and zero out their time.
+        finalSubtasks = modalSubtasks.map(s => ({ ...s, timeSpent: 0 }));
+      } else {
+        // Otherwise, merge. Use the modal's list as the source of truth for what subtasks exist.
+        // But for each of those subtasks, use the timeSpent from the latest state to preserve timer updates.
+        const subtaskTimeMap = new Map(todo.subtasks?.map(s => [s.id, s.timeSpent || 0]));
+        finalSubtasks = modalSubtasks.map(modalSub => ({
+            ...modalSub,
+            timeSpent: subtaskTimeMap.get(modalSub.id) ?? (modalSub.timeSpent || 0),
+        }));
+      }
+      
+      newTodo.subtasks = finalSubtasks;
+
+      // After subtasks are finalized, recalculate the parent's total timeSpent if needed.
+      if (newTodo.subtasks && newTodo.subtasks.length > 0) {
+          newTodo.timeSpent = newTodo.subtasks.reduce((sum, s) => sum + (s.timeSpent || 0), 0);
+      } else if (resetTime) {
+          // If no subtasks and time is reset, parent time is 0.
+          newTodo.timeSpent = 0;
+      }
+      // If there are no subtasks and time is NOT reset, the parent's `timeSpent` (from `...todo`) is preserved.
+      
+      return newTodo;
+    }));
+
     setEditingTodo(null);
   };
   
@@ -438,7 +497,7 @@ const App: React.FC = () => {
 
   const activeCount = useMemo(() => todos.filter(todo => !todo.completed).length, [todos]);
   
-  const isSoundPlaying = useMemo(() => !!activeTimer?.isRunning, [activeTimer]);
+  const isSoundPlaying = useMemo(() => !!activeTimer?.isRunning && hasInteracted, [activeTimer, hasInteracted]);
 
   const enterFocusMode = () => {
     if (activeTimer) {

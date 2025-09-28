@@ -1,12 +1,34 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Todo, Priority, Subtask } from '../types';
-import { PlusIcon, TrashIcon } from './icons';
+import { PlusIcon, TrashIcon, ArrowPathIcon } from './icons';
 
 interface TodoEditModalProps {
   todo: Todo;
-  onSave: (updatedTodo: Partial<Todo> & { id: number }) => void;
+  onSave: (updatedTodo: {
+    id: number;
+    text: string;
+    dueDate: string | null;
+    priority: Priority;
+    duration: number | null;
+    subtasks: Subtask[];
+    resetTime: boolean;
+  }) => void;
   onCancel: () => void;
 }
+
+const formatTime = (seconds: number): string => {
+  if (!seconds || seconds <= 0) return '0s';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (secs > 0 && hours === 0) parts.push(`${secs}s`); // Only show seconds if less than an hour
+  
+  return parts.length > 0 ? parts.join(' ') : '0s';
+};
 
 const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel }) => {
   const [text, setText] = useState(todo.text);
@@ -19,6 +41,7 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
 
   const [durationValue, setDurationValue] = useState(initialDurationValue ? String(initialDurationValue) : '');
   const [durationUnit, setDurationUnit] = useState<'minutes' | 'hours'>(initialUnit);
+  const [resetTime, setResetTime] = useState(false);
 
   const [subtasks, setSubtasks] = useState<Subtask[]>(todo.subtasks || []);
   const [newSubtaskText, setNewSubtaskText] = useState('');
@@ -40,6 +63,13 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
   const allocatedDuration = useMemo(() => {
     return subtasks.reduce((sum, sub) => sum + (sub.duration || 0), 0);
   }, [subtasks]);
+
+  const totalTimeSpent = useMemo(() => {
+    if (todo.subtasks && todo.subtasks.length > 0) {
+        return todo.subtasks.reduce((sum, sub) => sum + (sub.timeSpent || 0), 0);
+    }
+    return todo.timeSpent || 0;
+  }, [todo]);
 
   const remainingDuration = totalDurationInMinutes - allocatedDuration;
   
@@ -76,42 +106,14 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
     
     const newTotalDuration = totalDurationInMinutes > 0 ? totalDurationInMinutes : null;
 
-    // Process subtasks to reset timeSpent only if their duration has changed.
-    const updatedSubtasks = subtasks.map(currentSubtask => {
-        const originalSubtask = todo.subtasks?.find(s => s.id === currentSubtask.id);
-        
-        // If it's a new subtask, it will have timeSpent: 0 by default.
-        // If an existing subtask's duration changes, reset its timeSpent.
-        if (originalSubtask && originalSubtask.duration !== currentSubtask.duration) {
-            return { ...currentSubtask, timeSpent: 0 };
-        }
-        
-        // Otherwise, return the subtask with its timeSpent preserved.
-        return currentSubtask;
-    });
-    
-    let finalTimeSpent;
-
-    if (updatedSubtasks.length > 0) {
-        // For tasks with subtasks, total time spent is the sum of subtasks' time.
-        finalTimeSpent = updatedSubtasks.reduce((sum, s) => sum + (s.timeSpent || 0), 0);
-    } else {
-        // For tasks without subtasks, check if the main duration has changed.
-        if (todo.duration !== newTotalDuration) {
-            finalTimeSpent = 0; // Reset time if duration changes.
-        } else {
-            finalTimeSpent = todo.timeSpent || 0; // Preserve original time spent.
-        }
-    }
-
     onSave({
       id: todo.id,
       text: text.trim(),
       dueDate: dueDate || null,
       priority,
       duration: newTotalDuration,
-      subtasks: updatedSubtasks,
-      timeSpent: finalTimeSpent,
+      subtasks: subtasks,
+      resetTime: resetTime,
     });
   };
 
@@ -223,6 +225,21 @@ const TodoEditModal: React.FC<TodoEditModalProps> = ({ todo, onSave, onCancel })
                         <p className="text-xs text-red-500 mt-1">
                             Total duration is less than the sum of subtask durations ({allocatedDuration} min).
                         </p>
+                    )}
+                     {totalTimeSpent > 0 && (
+                        <div className="mt-3">
+                            <label htmlFor="reset-time" className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer w-fit">
+                                <input
+                                    id="reset-time"
+                                    type="checkbox"
+                                    checked={resetTime}
+                                    onChange={(e) => setResetTime(e.target.checked)}
+                                    className="h-4 w-4 rounded border-slate-400 dark:border-slate-500 text-indigo-600 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 focus:ring-indigo-500 bg-transparent"
+                                />
+                                <ArrowPathIcon className="h-4 w-4" />
+                                <span className="font-medium">Reset time spent ({formatTime(totalTimeSpent)})</span>
+                            </label>
+                        </div>
                     )}
                 </div>
 

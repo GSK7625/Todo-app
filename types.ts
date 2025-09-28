@@ -1,3 +1,11 @@
+export interface Subtask {
+  id: number;
+  text: string;
+  completed: boolean;
+  duration?: number; // in minutes
+  timeSpent?: number; // in seconds
+}
+
 export interface Todo {
   id: number;
   text: string;
@@ -7,6 +15,7 @@ export interface Todo {
   priority?: Priority;
   duration?: number | null; // in minutes
   timeSpent?: number; // in seconds
+  subtasks?: Subtask[];
 }
 
 export enum Filter {
